@@ -1,4 +1,4 @@
-#include "udoo_motor_control.h"
+#include "arduino_motor_control.h"
 #include "ros.h"
 #include "geometry_msgs/Twist.h"
 #include "std_msgs/Int32.h"
@@ -11,8 +11,14 @@ int spd;
 int turnAmount;
 long timecheck = 0;
 
+int spdMotor1;
+int spdMotor2;
+
 long encoder1;
 long encoder2;
+
+long last_encoder1;
+
 long encoder1target;
 long encoder2target;
 int distanceForward = 0;
@@ -35,28 +41,30 @@ ros::Subscriber<std_msgs::Int32> modeSubscription("locomotion_mode", modeMessage
 void velocityMessageHandler(const geometry_msgs::Twist& cmd_vel) {
 
   //check if cmd_vel is sending velocities
-  if (cmd_vel.linear.x != 128)
-  {
-    spd = cmd_vel.linear.x;
-    turnAmount = 128;
-    //only go for one second
-    //setSpeedBoth(spd);
-    timecheck = millis();
-  }
-  //if there is no forward velocity, check for turning
-  if (cmd_vel.angular.z != 128)
-  {
-    //do some kind of turn
-    spd = 128;
-    turnAmount = cmd_vel.angular.z;
-    timecheck = millis();
-  }lo
-  if (cmd_vel.angular.z == 128 && cmd_vel.linear.x == 128)
-  {
-    spd = 128;
-    turnAmount = 128;
-  }
-
+/*  if (cmd_vel.linear.x != 128)*/
+/*  {*/
+/*    spd = cmd_vel.linear.x;*/
+/*    turnAmount = 128;*/
+/*    //only go for one second*/
+/*    //setSpeedBoth(spd);*/
+/*    timecheck = millis();*/
+/*  }*/
+/*  //if there is no forward velocity, check for turning*/
+/*  if (cmd_vel.angular.z != 128)*/
+/*  {*/
+/*    //do some kind of turn*/
+/*    turnAmount = cmd_vel.angular.z;*/
+/*    timecheck = millis();*/
+/*  }*/
+/*  if (cmd_vel.angular.z == 128 && cmd_vel.linear.x == 128)*/
+/*  {*/
+/*    spd = 128;*/
+/*    turnAmount = 128;*/
+/*  }*/
+   spd = cmd_vel.linear.x;
+   spd = 255 - spd;
+   turnAmount = cmd_vel.angular.z;
+   timecheck = millis();
 
 
 }
@@ -71,6 +79,7 @@ void distMessageHandler(const geometry_msgs::Twist& cmd_dist) {
   //degreesTurn = cmd_dist.angular.z;
   encoder1target = cmd_dist.linear.x;
   encoder2target = cmd_dist.linear.y;
+  timecheck = millis();
 
 }
 
@@ -83,9 +92,11 @@ void setup() {
   // put your setup code here, to run once:
   pinMode(RX_PIN, INPUT);
   pinMode(TX_PIN, OUTPUT);
+  
   // Begin serial and serial 1, which is how we are talking to the motor driver
-  Serial1.begin(9600);
-
+  Serial1.begin(38400);
+  //Serial1.begin(9600);
+  
   // turn the PID on
   enc1PID.SetMode(AUTOMATIC);
   enc1PID.SetOutputLimits(PID_output_lower, PID_output_upper);
@@ -116,18 +127,36 @@ void setup() {
   resetEncoders();
   spd = 128;
   turnAmount = 128;
-  setSpeedBoth(spd);
   delay(1000);
+  setMode(INDIVIDUAL_MOTOR_CONTROL);
+  delay(10);
+  setSpeed1(128);
+  delay(10);
+  setSpeed2(128);
+  delay(10);
+  //setMode(INDIVIDUAL_MOTOR_CONTROL);
 }
 
 
 void loop() {
   if (current_mode == VEL_MODE)
-  {
-    setSpeedBoth(spd);
+  { 
+   encoder1 = getEncoder(1);
+   if ((encoder1 - last_encoder1) < 10)
+	{
+	spd = spd*1.5;
+	}
+    //setSpeedBoth(spd);
+    //Turn(turnAmount);
+    spdMotor1 = spd - (turnAmount - 128);
+    spdMotor2 = spd + (turnAmount - 128);
+    //delay(50);
     
+    setSpeed1(spdMotor1);
+    delay(5);
+    spdMotor2 = setSpeed2(spdMotor2);
+    delay(20);
     
-    Turn(turnAmount);
   }
   else if (current_mode == DIST_MODE) {
 
@@ -168,7 +197,8 @@ void loop() {
 
     // Set the speed of the motors to the PID controller output
     setSpeed1(PID1_output);
-    setSpeed1(PID2_output);
+    delay(5);
+    setSpeed2(PID2_output);
     //  setSpeedBoth(sentSpeed);
 
     // Report the velocity on the ROS publisher
@@ -184,20 +214,24 @@ void loop() {
   }
   
   reported_velocity.linear.x = getSpeed(1);
-  reported_velocity.linear.y = spd;
+  reported_velocity.linear.y = getSpeed(2);
   reported_velocity.linear.z = turnAmount;
-  reported_velocity.angular.x = timecheck;
-  reported_velocity.angular.y = current_mode;
-  //reported_velocity.linear.x = sentSpeed;
+  reported_velocity.angular.x = spdMotor1;
+  reported_velocity.angular.y = spdMotor2;
+  //reported_velocity.angular.x = spd;
+  //reported_velocity.angular.y = spdMotor2;
+  reported_velocity.angular.z = spd;
   velocityReporter.publish(&reported_velocity);
 
   if ((millis() - timecheck) > 1000)
   {
     spd = 128;
     turnAmount = 128;
-    setSpeedBoth(spd);
-
-    Turn(turnAmount);
+    //setSpeedBoth(spd);
+    setSpeed1(spd);
+    delay(10);
+    setSpeed2(spd);
+    //Turn(turnAmount);
   }
   nh.spinOnce();
   delay(10);

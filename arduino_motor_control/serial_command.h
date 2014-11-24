@@ -1,7 +1,7 @@
 #ifndef SERIAL_COMMAND_H_
 #define SERIAL_COMMAND_H_
 
-#include "udoo_motor_control.h"
+#include "arduino_motor_control.h"
 
 char input;
 char motor_driver_output;

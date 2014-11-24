@@ -3,12 +3,13 @@
 void sendCommand(char command, char commandArgument = 0) {
   // Write SYNC command
   Serial1.write((byte)SYNC);
-  delay(10);
+  //delay(10);
   Serial1.write(command);
-  delay(10);
+  //delay(10);
   if (commandArgument) {
     Serial1.write(commandArgument);
   }
+  delay(5);
 }
 
 void setMode(int mode) {
@@ -27,11 +28,22 @@ int getSpeed(int motor) {
 }
 
 void setSpeed1(int spd) {
+ // setMode(INDIVIDUAL_MOTOR_CONTROL);
+  //delay(5);
   sendCommand(SET_SPEED_1, spd);
 }
 
 void setSpeed2(int spd) {
+  /*if (spd == 127) spd = 126;
+  if(spd > 128 || spd < 128)
+ {
+   spd = 255 - spd;
+ } */
+ //setMode(INDIVIDUAL_MOTOR_CONTROL);
+ 
+ //spd = 254 - spd;
   sendCommand(SET_SPEED_2, spd);
+  //return spd;
 }
 
 void setSpeedBoth(int spd) {

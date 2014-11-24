@@ -1,7 +1,7 @@
 #ifndef COMMANDS_H_
 #define COMMANDS_H_
 
-#include "udoo_motor_control.h"
+#include "arduino_motor_control.h"
 
 #define LOOP_MASK 0x01
 #define BIT_DELAY 100
@@ -14,7 +14,7 @@ http://www.robot-electronics.co.uk/htm/md25ser.htm
 #define GET_SPEED_1 0x21
 #define GET_SPEED_2 0x22
 #define GET_ENCODER_1 0x23
-#define GET_ENCODER_2 0x23
+#define GET_ENCODER_2 0x24
 #define GET_ENCODERS 0x25
 #define GET_VOLTS 0x26
 #define GET_CURRENT_1 0x27
@@ -35,11 +35,13 @@ http://www.robot-electronics.co.uk/htm/md25ser.htm
 #define ENABLE_TIMEOUT 0x39
 
 // Define the modes that determine what the set speed and turn commands do
-#define INDIVIDUAL_MOTOR_CONTROL 0
-#define COMBINED_MOTOR_CONTROL 2
+#define INDIVIDUAL_MOTOR_CONTROL 0x00
+#define COMBINED_MOTOR_CONTROL 0x02
 
 void sendCommand(char command, char commandArgument);
 void setMode(int mode);
+void setSpeed1(int spd);
+void setSpeed2(int spd);
 int getSpeed();
 void setSpeedBoth();
 int convertSpeed(int inspeed);
